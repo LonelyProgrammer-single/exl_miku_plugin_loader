@@ -1,42 +1,42 @@
-#include "lib.hpp"
+#include "lib.hpp"       // <--- Исправляет ошибку HOOK_DEFINE_TRAMPOLINE
+#include "common.hpp"
+#include "fs.hpp"
+#include <cstring>
 
-/* Define hook StubCopyright. Trampoline indicates the original function should be kept. */
-/* HOOK_DEFINE_REPLACE can be used if the original function does not need to be kept. */
-HOOK_DEFINE_TRAMPOLINE(StubCopyright) {
+#define MOUNT_NAME "ExlSD"
 
-    /* Define the callback for when the function is called. Don't forget to make it static and name it Callback. */
-    static void Callback(bool enabled) {
+// Объявляем nnMain, чтобы компилятор его видел
+extern "C" void nnMain();
 
-        /* Call the original function, with the argument always being false. */
-        Orig(false);
+void RunFsTest() {
+    nn::fs::MountSdCardForDebug(MOUNT_NAME);
+
+    const char* path = MOUNT_NAME ":/hook_nnmain_test.txt";
+    nn::fs::CreateFile(path, 0);
+    
+    nn::fs::FileHandle handle;
+    if (R_SUCCEEDED(nn::fs::OpenFile(&handle, path, nn::fs::OpenMode_Write | nn::fs::OpenMode_Append))) {
+        const char* text = "Hello from nnMain hook!\n";
+        long size = 0;
+        nn::fs::GetFileSize(&size, handle);
+        
+        auto opt = nn::fs::WriteOption::CreateOption(nn::fs::WriteOptionFlag_Flush);
+        nn::fs::WriteFile(handle, size, text, std::strlen(text), opt);
+        nn::fs::CloseFile(handle);
     }
+}
 
-};
-
-
-/* Declare function to dynamic link with. */
-namespace nn::oe {
-    void SetCopyrightVisibility(bool);
+// Хук для void nnMain() без аргументов
+HOOK_DEFINE_TRAMPOLINE(MainHook) {
+    static void Callback() {
+        RunFsTest(); // Наш код
+        Orig();      // Оригинальный nnMain
+    }
 };
 
 extern "C" void exl_main(void* x0, void* x1) {
-    /* Setup hooking environment. */
     exl::hook::Initialize();
-
-    /* Install the hook at the provided function pointer. Function type is checked against the callback function. */
-    StubCopyright::InstallAtFuncPtr(nn::oe::SetCopyrightVisibility);
-
-    /* Alternative install funcs: */
-    /* InstallAtPtr takes an absolute address as a uintptr_t. */
-    /* InstallAtOffset takes an offset into the main module. */
-
-    /*
-    For sysmodules/applets, you have to call the entrypoint when ready
-    exl::hook::CallTargetEntrypoint(x0, x1);
-    */
-}
-
-extern "C" NORETURN void exl_exception_entry() {
-    /* Note: this is only applicable in the context of applets/sysmodules. */
-    EXL_ABORT("Default exception handler called!");
+    
+    // Пытаемся установить хук, используя указатель на функцию
+    MainHook::InstallAtFuncPtr(nnMain);
 }
