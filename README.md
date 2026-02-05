@@ -5,7 +5,7 @@ I plan to port most cool hook based pacthes made for Project Diva Megamix+ for P
 ^.^
 
 > [!NOTE]
-> This project is a work in progress. If you have issues, reach out to `lsmsmx` on Discord.
+> This project is a work in progress. If you have issues, reach out to `lsmsmx` on Discord or `MikuLoverMwahh` on Telegram
 
 # Credit
 - Atmosphère: A great reference and guide.
