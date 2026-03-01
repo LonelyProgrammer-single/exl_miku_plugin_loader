@@ -109,7 +109,31 @@ static void loadStrArray(const std::string& filePath) {
 HOOK_DEFINE_TRAMPOLINE(LoadStrArrayHook) {
     static void Callback() {
         Orig(); 
+        // these were offered by my friend dandy_bleat
         loadStrArray("ExlSD:/DMLSwitchPort/lang2/mod_str_array.toml"); 
+        loadStrArray("ExlSD:/DMLSwitchPort/lang2/str_array.toml");
+        loadStrArray("ExlSD:/DMLSwitchPort/lang2/mdata_str_array.toml");
+        loadStrArray("ExlSD:/DMLSwitchPort/lang2/privilege_str_array.toml"); 
+        loadStrArray("ExlSD:/DMLSwitchPort/lang2/dlc1_str_array.toml"); 
+        loadStrArray("ExlSD:/DMLSwitchPort/lang2/dlc2A_str_array.toml"); 
+        loadStrArray("ExlSD:/DMLSwitchPort/lang2/dlc2B_str_array.toml"); 
+        loadStrArray("ExlSD:/DMLSwitchPort/lang2/dlc3A_str_array.toml"); 
+        loadStrArray("ExlSD:/DMLSwitchPort/lang2/dlc3B_str_array.toml");  
+        loadStrArray("ExlSD:/DMLSwitchPort/lang2/dlc4_str_array.toml");  
+        loadStrArray("ExlSD:/DMLSwitchPort/lang2/dlc7_str_array.toml");  
+        loadStrArray("ExlSD:/DMLSwitchPort/lang2/dlc8_str_array.toml");  
+        loadStrArray("ExlSD:/DMLSwitchPort/lang2/dlc9_str_array.toml");  
+        loadStrArray("ExlSD:/DMLSwitchPort/lang2/dlc10_str_array.toml");   
+        loadStrArray("ExlSD:/DMLSwitchPort/lang2/dlc11_str_array.toml");   
+        loadStrArray("ExlSD:/DMLSwitchPort/lang2/dlc12_str_array.toml");   
+        loadStrArray("ExlSD:/DMLSwitchPort/lang2/dlc13_str_array.toml");   
+        loadStrArray("ExlSD:/DMLSwitchPort/lang2/dlc14_str_array.toml");   
+        loadStrArray("ExlSD:/DMLSwitchPort/lang2/dlc15_str_array.toml");   
+        loadStrArray("ExlSD:/DMLSwitchPort/lang2/dlc16_str_array.toml");   
+        loadStrArray("ExlSD:/DMLSwitchPort/lang2/dlc17_str_array.toml");   
+        loadStrArray("ExlSD:/DMLSwitchPort/lang2/dlc18_str_array.toml");   
+        loadStrArray("ExlSD:/DMLSwitchPort/lang2/dlc19_str_array.toml"); 
+        // he told people will need them
     }
 };
 

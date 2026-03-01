@@ -16,6 +16,9 @@
 #define ADDR_COS_LIMIT_3 FIX(0x00519CA0)
 #define ADDR_EFF_LIMIT FIX(0x0017B710)
 #define ADDR_LYRIC_LIMIT FIX(0x004C3B18)
+#define ADDR_CHALLENGE_TIME_1 FIX(0x0018C224)
+#define ADDR_CHALLENGE_TIME_2 FIX(0x0018C244)
+#define ADDR_CHALLENGE_TIME_3 FIX(0x0018BCB8)
 
 
 inline void ApplyCustomPatches() {
@@ -31,7 +34,10 @@ inline void ApplyCustomPatches() {
     exl::patch::CodePatcher(ADDR_MOD_CSEL_2).Write<uint32_t>(0x2A0803E0);
     exl::patch::CodePatcher(ADDR_COS_LIMIT_1).Write<uint32_t>(0x14000004);
     exl::patch::CodePatcher(ADDR_COS_LIMIT_2).Write<uint32_t>(0x2A0003F8);
-    exl::patch::CodePatcher(ADDR_EFF_LIMIT).Write<uint32_t>(0x7103FC3F);
     exl::patch::CodePatcher(ADDR_COS_LIMIT_3).Write<uint32_t>(0x2A1F03E9);
+    exl::patch::CodePatcher(ADDR_EFF_LIMIT).Write<uint32_t>(0x7103FC3F);
     exl::patch::CodePatcher(ADDR_LYRIC_LIMIT).Write<uint32_t>(0xF10FA27F);
+    exl::patch::CodePatcher(ADDR_CHALLENGE_TIME_1).Write<uint32_t>(0x320003FA);
+    exl::patch::CodePatcher(ADDR_CHALLENGE_TIME_2).Write<uint32_t>(0x7100011F);
+    exl::patch::CodePatcher(ADDR_CHALLENGE_TIME_3).Write<uint32_t>(0x7100011F);
 }
