@@ -9,6 +9,7 @@
 #include <cstring>
 #include <vector>
 #include "patches.hpp"
+#include "SpriteLoader.hpp"
 
 // =========================================================
 // ADDRESSES & CONSTANTS (NSO = Ghidra - 0x100)
@@ -351,6 +352,7 @@ extern "C" void exl_main(void* x0, void* x1) {
     exl::hook::Initialize();
     ApplyCustomPatches();  
     StrArray::init();
+    SpriteLoader::init();
     MainHook::InstallAtFuncPtr(nnMain);
 
     FindOrCreateScoreHook::InstallAtOffset(ADDR_FIND_OR_CREATE);
