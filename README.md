@@ -36,9 +36,10 @@ I plan to port most cool hook based pacthes made for Project Diva Megamix+ for P
 
 # TitleID to be used
 const char *possible_tids[] = {
-        "0100F3100DA46000", // JP (Mega39s)\n
-        "01001CC00FA1A000", // EN (MegaMix)\n
-        "0100BE300FF62000"  // KR (Mega39s)\n
+
+       - "0100F3100DA46000", // JP (Mega39s)
+       - "01001CC00FA1A000", // EN (MegaMix)
+       - "0100BE300FF62000"  // KR (Mega39s)
 };    
 
 # Credit
