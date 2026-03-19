@@ -31,10 +31,11 @@ I plan to port most cool hook based pacthes made for Project Diva Megamix+ for P
 
 -------------------------------------------------------------------------------------------------------------------------
 
+# Debug and Freecam
 Introducing fully ported **Debug mode** and **Freecam** mod from PC to Nintendo Switch! Oh, and rendering while paused.
 NOTE: Debug and freecam is totally disabled by default. You should go to global config.toml at sdmc:/DMLSwitchPort/ and change `debug = false` to `debug = true`
 
-### Here is a list of features:
+### Here is a list of debug and freecam of features:
 - Access _most_ of debug game substates
 - Advanced freecam in Rhythm game, PV modes; In customization menu as well; Pausing will make game render stuff
 - Use mouse to open a real time dw gui for other debug windows by right click (Ctrl + RMC alternative)
