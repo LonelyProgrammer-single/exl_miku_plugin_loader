@@ -394,7 +394,6 @@ extern "C" void exl_main(void* x0, void* x1) {
     
     MainHook::InstallAtFuncPtr(nnMain);
 
-    LoadingScreenMod::init();
     
     ApplyCustomPatches();
     DatabaseLoader::init();
