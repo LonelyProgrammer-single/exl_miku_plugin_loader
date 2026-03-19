@@ -4,7 +4,7 @@
 
 class Config {
 public:
-    static bool enableDebugConsole;
+    static bool enableDebug;
     static std::string modsDirectoryPath;
     static std::vector<std::string> priorityPaths;
 

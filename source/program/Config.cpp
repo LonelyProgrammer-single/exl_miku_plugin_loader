@@ -6,28 +6,23 @@
 #include <algorithm>
 #include <set>
 
-bool Config::enableDebugConsole = false;
+bool Config::enableDebug = false;
 std::string Config::modsDirectoryPath = "";
 std::vector<std::string> Config::priorityPaths;
 
-/**
- * Generates a default configuration file and synchronizes it with 
- * existing mod folders found on the SD card.
- */
 static void SaveConfig(const std::string& path) {
     std::string tomlContent = "# DML Switch Port - Global Configuration\n";
     tomlContent += "enabled = true\n";
-    tomlContent += "console = " + std::string(Config::enableDebugConsole ? "true" : "false") + "\n\n";
+    tomlContent += "debug = " + std::string(Config::enableDebug ? "true" : "false") + "\n\n";
     tomlContent += "# Priority list (Top is highest priority).\n";
-    tomlContent += "# New mods found on SD are automatically appended to the bottom of this list.\n";
-    tomlContent += "priority = [\n";
+    tomlContent += "# New mods found on SD are automatically appended here.\n";
+    tomlContent += "priority =[\n";
     
     for (const auto& name : Config::priorityPaths) {
         tomlContent += "    \"" + name + "\",\n";
     }
     tomlContent += "]\n";
 
-    // Re-create the file to ensure the size is updated correctly
     nn::fs::DeleteFile(path.c_str());
     nn::fs::CreateFile(path.c_str(), tomlContent.length());
     
@@ -39,11 +34,10 @@ static void SaveConfig(const std::string& path) {
 }
 
 bool Config::init() {
-    // 1. Identify active Title ID to determine the Atmosphere contents path
     const char* possible_tids[] = { 
-        "0100F3100DA46000", // JP (Mega39s)
-        "01001CC00FA1A000", // EN (MegaMix)
-        "0100BE300FF62000"  // KR (Mega39s)
+        "0100F3100DA46000", // JP
+        "01001CC00FA1A000", // EN
+        "0100BE300FF62000"  // KR
     };
     
     std::string atmoPath = "";
@@ -59,7 +53,6 @@ bool Config::init() {
 
     if (atmoPath.empty()) return false;
 
-    // Define mod directory path (within RomFS to leverage LayeredFS caching)
     modsDirectoryPath = atmoPath + "/romfs/mods";
     nn::fs::CreateDirectory(modsDirectoryPath.c_str());
     nn::fs::CreateDirectory("ExlSD:/DMLSwitchPort");
@@ -68,7 +61,6 @@ bool Config::init() {
     nn::fs::FileHandle h;
     bool configExists = R_SUCCEEDED(nn::fs::OpenFile(&h, configPath.c_str(), nn::fs::OpenMode_Read));
 
-    // 2. Load existing settings if the configuration file exists
     if (configExists) {
         int64_t size = 0;
         nn::fs::GetFileSize(&size, h);
@@ -79,38 +71,46 @@ bool Config::init() {
         auto result = toml::parse(content);
         if (result) {
             auto config = std::move(result).table();
-            enableDebugConsole = config["console"].value_or(false);
+            enableDebug = config["debug"].value_or(false);
             if (auto pArr = config["priority"].as_array()) {
                 for (auto& el : *pArr) {
                     std::string val = el.value_or("");
                     if (!val.empty()) priorityPaths.push_back(val);
                 }
             }
-            // Master kill-switch
             if (!config["enabled"].value_or(true)) return false;
         }
     }
 
-    // 3. Scan physical mod directory for new entries
     std::vector<std::string> modsOnDisk;
     if (R_SUCCEEDED(nn::fs::OpenDirectory(&dh, modsDirectoryPath.c_str(), nn::fs::OpenDirectoryMode_Directory))) {
         int64_t count = 0;
         nn::fs::DirectoryEntry entry;
         while (R_SUCCEEDED(nn::fs::ReadDirectory(&count, &entry, dh, 1)) && count > 0) {
-            // Cast to int to prevent enum-compare warnings/errors
             if ((int)entry.m_Type == (int)nn::fs::DirectoryEntryType_Directory) {
                 modsOnDisk.push_back(entry.m_Name);
             }
         }
         nn::fs::CloseDirectory(dh);
     }
-    std::sort(modsOnDisk.begin(), modsOnDisk.end()); // Sort new mods alphabetically
+    std::sort(modsOnDisk.begin(), modsOnDisk.end());
 
-    // 4. Sync priority list with physical mod folders
     bool configChanged = !configExists;
-    std::set<std::string> currentPrioritySet(priorityPaths.begin(), priorityPaths.end());
 
-    // Automatically append any new mod folders found on SD card
+    // Remove missing mods from priority list
+    std::set<std::string> currentDiskSet(modsOnDisk.begin(), modsOnDisk.end());
+    auto it = priorityPaths.begin();
+    while (it != priorityPaths.end()) {
+        if (currentDiskSet.find(*it) == currentDiskSet.end()) {
+            it = priorityPaths.erase(it);
+            configChanged = true;
+        } else {
+            ++it;
+        }
+    }
+
+    // Append new mods found on SD card
+    std::set<std::string> currentPrioritySet(priorityPaths.begin(), priorityPaths.end());
     for (const auto& modName : modsOnDisk) {
         if (currentPrioritySet.find(modName) == currentPrioritySet.end()) {
             priorityPaths.push_back(modName);
@@ -118,10 +118,7 @@ bool Config::init() {
         }
     }
 
-    // 5. Save the updated configuration if changes were detected
-    if (configChanged) {
-        SaveConfig(configPath);
-    }
+    if (configChanged) SaveConfig(configPath);
 
     return true;
 }

@@ -13,6 +13,11 @@
 #include "Config.hpp"
 #include "ModLoader.hpp"
 #include "DatabaseLoader.hpp"
+#include "DebugMode.hpp"
+#include "freecam.hpp"
+#include <nn/os.hpp>
+#include <ctime>
+#include "FsHooks.hpp"
 
 // =========================================================
 // ADDRESSES & CONSTANTS (NSO = Ghidra - 0x100)
@@ -30,10 +35,13 @@
 #define ADDR_INIT_BOOT_2       FIX(0x0C5950)
 #define ADDR_SYNC_MANAGER      FIX(0x0C6440) 
 
-// New Addresses for Modules and Custom Items
-#define ADDR_FIND_MODULE       FIX(0x0C8950) 
-#define ADDR_FIND_CSTM_ITEM    FIX(0x0C8970) 
-#define ADDR_FIND_CSTM_GALLERY FIX(0x0C8D50)
+// Addresses for Modules and Custom Items
+#define ADDR_FIND_MODULE_1     FIX(0x0C8950) // Primary module lookup
+#define ADDR_FIND_MODULE_2     FIX(0x0C8D30) // Secondary/Inlined module lookup (cloned logic)
+#define ADDR_FIND_CSTM_ITEM    FIX(0x0C8970) // Primary custom item lookup
+#define ADDR_FIND_CSTM_GALLERY FIX(0x0C8D50) // Gallery/Specific item list lookup
+#define ADDR_NPR_INIT_MAIN FIX(0x003D42B0) 
+
 
 // =========================================================
 // STRUCTURES
@@ -267,15 +275,33 @@ HOOK_DEFINE_TRAMPOLINE(FindScoreHook) {
 
 // --- NEW HOOKS FOR MODULES AND ITEMS ---
 
+// Hook for primary module search function
 HOOK_DEFINE_TRAMPOLINE(FindModuleHook) {
     static Module* Callback(void* mgr, uint32_t id) {
         std::scoped_lock lock(g_SaveMtx);
         if (g_moduleMap.count(id)) return &g_moduleMap[id];
 
         Module* res = Orig(mgr, id);
-        if (res == nullptr) {
+        if (res == nullptr && id > 0) {
             auto& mod = g_moduleMap[id];
-            mod.unknown0 = 3;
+            mod.unknown0 = 3; // Set as owned/unlocked
+            mod.unknown1 = 0;
+            res = &mod;
+        }
+        return res;
+    }
+};
+
+// Hook for secondary module search (duplicated game logic at 0x0C8D30)
+HOOK_DEFINE_TRAMPOLINE(FindModule2Hook) {
+    static Module* Callback(void* mgr, uint32_t id) {
+        std::scoped_lock lock(g_SaveMtx);
+        if (g_moduleMap.count(id)) return &g_moduleMap[id];
+
+        Module* res = Orig(mgr, id);
+        if (res == nullptr && id > 0) {
+            auto& mod = g_moduleMap[id];
+            mod.unknown0 = 3; // Set as owned/unlocked
             mod.unknown1 = 0;
             res = &mod;
         }
@@ -289,9 +315,9 @@ HOOK_DEFINE_TRAMPOLINE(FindCstmItemHook) {
         if (g_cstmItemMap.count(id)) return &g_cstmItemMap[id];
 
         CstmItem* res = Orig(mgr, id);
-        if (res == nullptr) {
+        if (res == nullptr && id > 0) {
             auto& cstm = g_cstmItemMap[id];
-            cstm.unknown0 = 3;
+            cstm.unknown0 = 3; // Set as owned/unlocked
             res = &cstm;
         }
         return res;
@@ -304,9 +330,9 @@ HOOK_DEFINE_TRAMPOLINE(FindCstmItemGalleryHook) {
         if (g_cstmItemMap.count(id)) return &g_cstmItemMap[id];
 
         CstmItem* res = Orig(mgr, id);
-        if (res == nullptr) {
+        if (res == nullptr && id > 0) {
             auto& cstm = g_cstmItemMap[id];
-            cstm.unknown0 = 3;
+            cstm.unknown0 = 3; // Set as owned/unlocked
             res = &cstm;
         }
         return res;
@@ -347,22 +373,34 @@ extern "C" void nnMain();
 HOOK_DEFINE_TRAMPOLINE(MainHook) {
     static void Callback() {
         nn::fs::MountSdCardForDebug(MOUNT_NAME);
+
         if (Config::init()) {
-            ModLoader::init(); 
+            ModLoader::init();
+            InitFreeCam();
+            DebugMode::Init();
         }
-        Orig(); 
+
+        FsHooks::Init();
+
+        Orig();
     }
 };
+
 
 extern "C" void exl_main(void* x0, void* x1) {
     exl::hook::Initialize();
 
+    nn::hid::Initialize();
+    
     MainHook::InstallAtFuncPtr(nnMain);
 
+    LoadingScreenMod::init();
+    
     ApplyCustomPatches();
     DatabaseLoader::init();
     StrArray::init();
     SpriteLoader::init();
+    
 
 
     FindOrCreateScoreHook::InstallAtOffset(ADDR_FIND_OR_CREATE);
@@ -371,8 +409,9 @@ extern "C" void exl_main(void* x0, void* x1) {
     InitBoot2Hook::InstallAtOffset(ADDR_INIT_BOOT_2);
     SyncManagerHook::InstallAtOffset(ADDR_SYNC_MANAGER);
     
-    // Install new hooks
-    FindModuleHook::InstallAtOffset(ADDR_FIND_MODULE);
+    FindModuleHook::InstallAtOffset(ADDR_FIND_MODULE_1);
+    FindModule2Hook::InstallAtOffset(ADDR_FIND_MODULE_2);
     FindCstmItemHook::InstallAtOffset(ADDR_FIND_CSTM_ITEM);
     FindCstmItemGalleryHook::InstallAtOffset(ADDR_FIND_CSTM_GALLERY);
+    
 };
